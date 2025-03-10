@@ -56,6 +56,12 @@ export default function Home() {
           </Link>
         </div>
       </div>
+      
+      {/* Hidden link to logs page - triple click to access */}
+      <div 
+        onClick={() => window.location.href = '/logs'} 
+        className="fixed bottom-0 right-0 w-4 h-4 opacity-0"
+      />
     </div>
   );
 } 

