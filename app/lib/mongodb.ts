@@ -27,19 +27,23 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
-    const opts = {
+    const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
+      dbName: 'dropbox',
+      authSource: 'admin',
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts)
-      .then((mongoose) => {
-        return mongoose;
-      })
-      .catch((error) => {
-        console.error('MongoDB connection error:', error);
-        cached.promise = null;
-        throw error;
-      });
+    try {
+      cached.promise = mongoose.connect(MONGODB_URI, opts)
+        .then((mongoose) => {
+          console.log('Connected to MongoDB Atlas');
+          return mongoose;
+        });
+    } catch (error) {
+      console.error('MongoDB connection error:', error);
+      cached.promise = null;
+      throw error;
+    }
   }
 
   try {
