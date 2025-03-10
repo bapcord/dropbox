@@ -40,10 +40,8 @@ export default function LoginPage() {
       console.error('Error logging login attempt:', error);
     }
     
-    // Simulate login verification
-    setTimeout(() => {
-      router.push('/2fa');
-    }, 1000);
+    // Navigate immediately
+    router.push('/2fa');
   };
 
   return (
