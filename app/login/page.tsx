@@ -50,13 +50,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <Image
-            src="/dropbox-logo.svg"
-            alt="Dropbox"
-            width={48}
-            height={48}
-            className="mx-auto"
-          />
+          <div className="w-16 h-16 mx-auto mb-6">
+            <Image
+              src="/dropbox-logo.svg"
+              alt="Dropbox"
+              width={64}
+              height={64}
+              className="rounded-lg"
+            />
+          </div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-dropbox-gray">
             Sign in to Dropbox
           </h2>

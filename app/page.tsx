@@ -8,12 +8,13 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-16">
         <div className="text-center mb-8">
-          <div className="w-24 h-24 mx-auto mb-6 relative">
+          <div className="w-24 h-24 mx-auto mb-6">
             <Image
               src="/dropbox-logo.svg"
               alt="Dropbox"
-              fill
-              className="rounded-full object-contain"
+              width={96}
+              height={96}
+              className="rounded-lg"
             />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
