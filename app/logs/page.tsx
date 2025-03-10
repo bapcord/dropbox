@@ -24,11 +24,16 @@ export default function LogsPage() {
       setIsLoading(true);
       setError('');
       const response = await fetch('/api/log');
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to fetch logs');
-      }
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Failed to fetch logs');
+      }
+      
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format from server');
+      }
+      
       setLogs(data);
     } catch (error) {
       console.error('Error fetching logs:', error);
